@@ -1,4 +1,8 @@
 # Connect 4 in Scheme
+I seriously dont know anymore. Ive tried so many possible combinations for this code to work and only see failures. Its taken me hours and hours just to figure out one function for this. 
+Im probably the problem as I cant understand things after watching all the videos, combing over the entire Kawa website, asking friends who have taken the class before to examine the code, removing distractions, and still cant find solutions. I have tried what feels like everything
+I am sorry for being a bad student in your class
+
 
 Use this [GitHub Classroom link](https://classroom.github.com/a/RJQJ_IEh) to create a repo for this project.
 
