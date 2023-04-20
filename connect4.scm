@@ -38,9 +38,7 @@
     ; TODO:  Load the .scm file containing your connect 4 code 
     ; Then launch a connect4 game.
     (include-relative "connect4_engine.scm")
-
-    ; Your function does not need to be named "connect4-game"
-    ((car (connect4-game num_rows num_columns win_length)))
+    (play-game num_rows num_columns win_length)
 )
 
 ;   

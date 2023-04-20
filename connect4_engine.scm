@@ -1,0 +1,226 @@
+(require 'regex)
+(require 'list-lib)
+;(require 'srfi-101)
+
+(define (make-board rows cols) ; list of row lists
+    (if (= rows 0)
+        '()
+        (cons (make-list cols 0) (make-board (- rows 1) cols))
+    )
+)
+
+(define (print-board lst)
+    (cond ((null? lst) (display (newline)))
+        ((list? (car lst)) (begin (print-board (cdr lst)) (print-board (car lst))))
+        (else (begin (display (car lst)) (display " ") (print-board (cdr lst))))
+    )
+)
+
+(define (print-game board cols)
+    (newline)
+    (print-headers alphabet cols)
+    (print-board board)
+)
+
+(define alphabet '(A B C D E F G H I J K L M N O P Q R S T U V W X Y Z))
+(define (print-headers lst cols)
+    (if (= 0 cols)
+        ()
+        (begin (display (car lst)) (print-headers (cdr lst) (- cols 1) ))
+    )
+)
+
+(define game-over 0)
+
+(define (play-game rows cols wins)
+    (define board (make-board rows cols))
+    (define player 1)
+    (define moves-played 0)
+    (print-game board cols)
+    (do ((game-over 0 (check-win player board wins))
+         (player (if (eq? player 1) 2 1) (if (eq? player 1) 2 1))
+         (moves-played 0 (+ moves-played 1)); increment moves-played after each turn
+        )
+        ((or (not (eq? game-over 0)) (= moves-played (* rows cols)))) ; check for tie game or end game
+        (let ((col (get-move player cols))) ;get col choice
+        (display col)
+        (place-piece player col board)
+        (print-game board cols))
+        (display 
+            (cond 
+                ((> game-over 0) (string-append "Congratulations, Player " (number->string game-over) ". You win."))
+                ((= moves-played (* rows cols)) "Tie game.")
+                ((= game-over -1) "Quit Game.")
+                (else "")
+            )
+        )
+    )
+)
+
+(play-game 6 7 4) ;get rid of later
+
+(define (get-move player cols)
+    (let loop ()
+        (let ((last-col (integer->char (+ 64 cols))))
+            (display (string-append "Player " (number->string player) ", enter a column (A-" 
+                        (string last-col) ") or Q to quit: ")))
+        (let* ((col-str (string-trim (read-line))) 
+            (col-len (string-length col-str)))
+            (cond 
+                ((= col-len 1)
+                    (let ((char-val (char->integer (string-ref col-str 0))))
+                        (cond 
+                            ((or (eq? col-str "Q") (eq? col-str "q")) ; check if user enters Q or q to quit the game
+                                (set! game-over -1) ; set game-over to -1 to indicate the game has been quit
+                            )
+                            ((and (>= char-val 65) (<= char-val (+ 64 cols)))
+                                (- char-val 65)
+                            )
+                            (else
+                                (display "Invalid column. ")
+                                (newline)
+                                (loop)
+                            )
+                        )
+                    )
+                )
+                ((= col-len 0)
+                    (display "Empty input. ")
+                    (newline)
+                    (loop)
+                )
+                (else
+                    (display "Invalid input. ")
+                    (newline)
+                    (loop)
+                )
+            )
+        )
+    )
+)
+
+(define (place-piece player col board)
+    (define (place-piece-helper row col board)
+        (if (null? row)
+            (error "Column is full.")
+            (if (= (car row) 0)
+                (set-car! row player)
+                (place-piece-helper (cdr row) col board)
+            )
+        )
+    )
+  
+    (define (get-row row board)
+        (if (null? board)
+            (error "Column index out of bounds.")
+            (if (= row 0)
+                (car board)
+                (get-row (- row 1) (cdr board))
+            )
+        )
+    )
+
+    (let* ((row 0)
+        (target-row (get-row row board)))
+        (place-piece-helper target-row col board)
+    )
+)
+
+(define (check-win player board win-length)
+    (define (check-horizontal)
+        (let loop ((cols board))
+            (cond
+                ((null? cols) #f)
+                ((>= (length (car cols)) win-length)
+                    (or (list-contains-sequence (take (car cols) win-length) (list player))
+                        (loop (cdr cols))
+                    )
+                )
+                (else (loop (cdr cols)))
+            )
+        )
+    )
+    
+    (define (check-vertical)
+        (let loop ((i 0))
+            (cond
+                ((>= i (length board)) #f)
+                ((>= (- (length (list-ref board i)) win-length) 0)
+                    (or (list-contains-sequence (take (drop i board) win-length)
+                            (make-list win-length player)
+                        )
+                        (loop (+ i 1))
+                    )
+                )
+                (else (loop (+ i 1)))
+            )
+        )
+    )
+  
+    (define (check-diagonal1) ;top left to bottom right
+        (let loop ((i 0))
+            (cond
+                ((>= i (- (length board) win-length)) #f)
+                ((>= (- (length (list-ref board i)) i) win-length)
+                    (or (list-contains-sequence (take (diagonal1-board i) win-length) (list player))
+                        (loop (+ i 1))
+                    )
+                )
+                (else (loop (+ i 1)))
+            )
+        )
+    )
+
+    (define (diagonal1-board i) ;top left to bottom right helper
+        (let loop ((j 0) (cols (drop i (reverse board))))
+            (if (null? cols) 
+                '()
+                (cons (list-ref (car cols) j) (loop (+ j 1) (cdr cols)))
+            )
+        )
+    )
+
+    (define (check-diagonal2) ;bottom left to top right
+        (let loop ((i 0))
+            (cond
+                ((>= i (- (length board) win-length)) #f)
+                ((>= (- (length (list-ref board (- (length board) 1 i))) i) win-length)
+                    (or (list-contains-sequence (take (diagonal2-board i) win-length) (list player))
+                        (loop (+ i 1))
+                    )
+                )
+                (else (loop (+ i 1)))
+            )
+        )
+    )
+
+    (define (diagonal2-board i) ;bottom left to top right helper
+        (let loop ((j 0) (cols (reverse (drop i (reverse board)))))
+            (if (null? cols) 
+                '()
+                (cons (list-ref (car cols) j) (loop (+ j 1) (cdr cols)))
+            )
+        )
+    )
+
+    (define (list-contains-sequence lst seq)
+        (let loop ((lst lst) (seq seq))
+            (if (null? seq) 
+                #t
+                (if (or (null? lst) (< (length lst) (length seq)))
+                    #f
+                    (if (eq? (car lst) (car seq))
+                        (loop (cdr lst) (cdr seq))
+                        (loop (cdr lst) seq)
+                    )
+                )
+            )
+        )
+    )
+
+    (or (check-horizontal) ;returns true or false
+        (check-vertical)
+        (check-diagonal1)
+        (check-diagonal2)
+    )
+)

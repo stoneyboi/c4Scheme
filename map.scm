@@ -76,3 +76,40 @@
 (newline)
 
 
+(define (map-by-index action max)
+    (if (= max 0)
+        '()
+        (append (map-by-index action (- max 1)) (list (action (- max 1))))
+    )
+)
+
+(define (contains value lst)
+    (fold 
+        (lambda (item partial) (or (eq? value item) partial))
+        #f
+        lst
+    )
+)
+
+(define alphabet '(A B C D E F G H I J K L M N O P Q R S T U V W X Y Z))
+(define test '((0 0 0 0 0 0) (1 1 1 1 1 1) (2 1 0 1 0 1) (3 0 0 0 0 0) (4 1 1 0 0 0) (5 0 0 1 1 1) (6 1 1 1 1 1)))
+(define (print-board lst)
+  (let ((transposed-board (apply map list lst)))
+    (display " ")
+    (do ((i 0 (+ i 1)))
+        ((= i (length (car lst))))
+      (display (list-ref alphabet i))
+      (display " "))
+    (newline)
+    (do ((i 0 (+ i 1)))
+        ((= i (length lst)))
+      (display i)
+      (display " ")
+      (do ((j 0 (+ j 1)))
+          ((= j (length (car lst))))
+        (display (list-ref (list-ref transposed-board i) j))
+        (display " "))
+      (newline))))
+
+(newline)
+(print-board test)
